@@ -1,78 +1,38 @@
-// script.js
-let orders = ["🍅 Tomate", "🥬 Lechuga", "🧀 Queso", "🍞 Pan"];
-let currentOrders = ["-", "-"];
-let scores = [0, 0];
-let timer = 60; // Tiempo en segundos
-let gameInterval;
-let timerInterval;
+async function pedirConsejo() {
+  const texto = document.getElementById("inputTexto").value;
+  const respuestaDiv = document.getElementById("respuesta");
 
-function startGame() {
-    generateOrder(1);
-    generateOrder(2);
-    generateIngredients(1);
-    generateIngredients(2);
-    gameInterval = setInterval(() => {
-        generateOrder(1);
-        generateOrder(2);
-        generateIngredients(1);
-        generateIngredients(2);
-    }, 10000); // Nuevos pedidos cada 10 segundos
-    timerInterval = setInterval(updateTimer, 1000);
+  if (!texto.trim()) {
+    respuestaDiv.textContent = "Escribí algo primero.";
+    return;
+  }
+
+  respuestaDiv.textContent = "Pensando...";
+
+  const prompt = `Dame una respuesta motivacional fuerte, directa y clara como un mentor a este mensaje: "${texto}"`;
+
+  const apiKey = "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"; // Reemplazalo por tu API key de OpenAI
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "text-davinci-003",
+        prompt: prompt,
+        max_tokens: 100,
+        temperature: 0.9,
+      }),
+    });
+
+    const data = await response.json();
+    const textoIA = data.choices[0].text.trim();
+    respuestaDiv.textContent = textoIA;
+  } catch (error) {
+    respuestaDiv.textContent = "Error al conectar con la IA.";
+    console.error(error);
+  }
 }
-
-function generateIngredients(player) {
-    const playerIngredients = document.getElementById(`ingredients${player}`);
-    playerIngredients.innerHTML = ""; // Limpiar ingredientes anteriores
-
-    // Generar ingredientes aleatorios
-    let availableIngredients = orders.slice();
-    for (let i = 0; i < 4; i++) {
-        let ingredient = availableIngredients.splice(Math.floor(Math.random() * availableIngredients.length), 1);
-        playerIngredients.innerHTML += `
-            <button class="ingredient" onclick="addIngredient('${ingredient}', ${player})">
-                ${ingredient}
-            </button>`;
-    }
-}
-
-function addIngredient(ingredient, player) {
-    let kitchenId = `kitchen${player}`;
-    let kitchen = document.getElementById(kitchenId);
-    kitchen.innerHTML += `<div class="kitchen-item">${ingredient}</div>`;
-}
-
-function submitOrder(player) {
-    let orderIndex = player - 1;
-    let kitchenId = `kitchen${player}`;
-    let kitchen = document.getElementById(kitchenId);
-    let currentIngredients = kitchen.innerText.split("\n").filter(item => item.trim() !== "");
-
-    if (currentIngredients.includes(currentOrders[orderIndex])) {
-        scores[orderIndex] += 10;
-        document.getElementById(`score${player}`).innerText = `Puntos: ${scores[orderIndex]}`;
-        currentOrders[orderIndex] = "-";
-        document.getElementById(`order${player}`).innerText = `Pedido: Completado`;
-        setTimeout(() => generateOrder(player), 2000); // Genera un nuevo pedido después de completar
-        kitchen.innerHTML = ""; // Limpia la cocina después de entregar el pedido
-    } else {
-        alert(`Jugador ${player}, ¡Pedido incorrecto!`);
-    }
-}
-
-function generateOrder(player) {
-    let order = orders[Math.floor(Math.random() * orders.length)];
-    currentOrders[player - 1] = order;
-    document.getElementById(`order${player}`).innerText = `Pedido: ${order}`;
-}
-
-function updateTimer() {
-    timer--;
-    document.getElementById("timer-bar").style.width = (timer * 100 / 60) + "%";
-    if (timer <= 0) {
-        clearInterval(gameInterval);
-        clearInterval(timerInterval);
-        alert(`¡Tiempo acabado! Jugador 1: ${scores[0]} puntos, Jugador 2: ${scores[1]} puntos`);
-    }
-}
-
-startGame();
